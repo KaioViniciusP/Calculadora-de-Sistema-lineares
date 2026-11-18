@@ -888,9 +888,10 @@ function ExplainSection() {
           <span className="n">6</span>
           <span>
             <strong>Tolerância numérica:</strong> no escalonamento, valores
-            abaixo de 10⁻⁹ × (maior entrada da matriz A) são tratados como zero;
-            um determinante de ordem n é considerado nulo abaixo de 10⁻⁹ ×
-            (maior entrada)ⁿ, evitando erros de arredondamento.
+            abaixo de 10⁻⁹ × (maior entrada da matriz A) são tratados como zero.
+            Um determinante de inteiros é exato e só é nulo se valer 0; com
+            decimais, é considerado nulo abaixo de 10⁻¹⁰ × (produto das normas
+            das colunas — limite de Hadamard), evitando erros de arredondamento.
           </span>
         </li>
       </ol>

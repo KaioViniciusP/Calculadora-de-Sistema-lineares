@@ -59,7 +59,7 @@ src/
 ## Verificações matemáticas
 
 - Regra de Cramer em sistemas quadrados, com determinantes pelo Teorema de Laplace (1ª coluna) e Sarrus em 3×3.
-- Determinante nulo quando `|det| ≤ 1e-9 × (max|mᵢⱼ|)ⁿ`.
+- Determinante nulo: comparação exata com `0` para matrizes de inteiros; com decimais, `|det| ≤ 1e-10 ×` limite de Hadamard.
 - Verificação por substituição e conferência com o escalonamento.
 - Eliminação de Gauss-Jordan com pivoteamento parcial.
 - Tolerância relativa `1e-9 × max|A|` (apenas a matriz A).

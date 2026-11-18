@@ -24,11 +24,6 @@ function semZeroNegativo(valor) {
   return valor === 0 ? 0 : valor
 }
 
-/** Maior valor absoluto entre os elementos da matriz. */
-function maiorAbsoluto(M) {
-  return M.reduce((max, row) => Math.max(max, ...row.map(Math.abs)), 0)
-}
-
 /** Cofator da 1ª coluna: Cᵢ₁ = (−1)^(i+1) · Mᵢ₁ (com i a partir de 0: (−1)^i). */
 function cofatorPrimeiraColuna(M, i) {
   const menor = detLaplace(submatriz(M, i, 0))
@@ -103,17 +98,26 @@ export function trocarColuna(A, k, b) {
 /**
  * Decide se um determinante é zero.
  *
- * Entradas decimais (0,1; 1/3…) não são exatas em ponto flutuante, então um
- * determinante que deveria ser 0 pode sair como 1e-16. A tolerância acompanha
- * a escala da matriz: o determinante de ordem n é soma de produtos de n
- * elementos, logo cresce como (maior |elemento|)ⁿ.
+ * Com elementos inteiros, Laplace usa só somas e produtos: o resultado é exato
+ * (enquanto couber em Number.MAX_SAFE_INTEGER) e a comparação com 0 é direta.
+ * Com decimais (0,1; 1/3…), o ponto flutuante gera resíduos como 1e-16, então
+ * usa-se uma tolerância proporcional ao limite de Hadamard:
  *
- *   tolerância = 1e-9 × (maior |mᵢⱼ|)ⁿ;   matriz toda nula → 1e-12
+ *   |det(M)| ≤ ‖coluna 1‖ · ‖coluna 2‖ · … · ‖coluna n‖
+ *
+ * Esse limite cresce na mesma proporção que o determinante (multiplicar uma
+ * coluna por k multiplica os dois por k), ao contrário de (maior |mᵢⱼ|)ⁿ.
  */
 export function ehZero(valor, M) {
-  const maior = maiorAbsoluto(M)
-  const tolerancia = maior > 0 ? 1e-9 * maior ** M.length : 1e-12
-  return Math.abs(valor) <= tolerancia
+  const inteiros = M.every((row) => row.every(Number.isInteger))
+  const limite = limiteHadamard(M)
+  if (inteiros && limite < Number.MAX_SAFE_INTEGER) return valor === 0
+  return Math.abs(valor) <= 1e-10 * limite
+}
+
+/** Limite de Hadamard: |det(M)| ≤ produto das normas das colunas. */
+function limiteHadamard(M) {
+  return M[0].reduce((prod, _, j) => prod * Math.hypot(...M.map((row) => row[j])), 1)
 }
 
 /**
@@ -142,15 +146,15 @@ export function resolverCramer(A, b) {
 
 /**
  * Verificação por substituição: para cada equação i, calcula o lado esquerdo
- * Σ aᵢⱼ·xⱼ e compara com o termo independente bᵢ. Usa a mesma tolerância
- * relativa do escalonamento: 1e-9 × maior |aᵢⱼ| (1e-12 se A for nula).
+ * Σ aᵢⱼ·xⱼ e compara com o termo independente bᵢ. A tolerância é relativa à
+ * escala da própria equação (maior entre |bᵢ| e os |aᵢⱼ·xⱼ|).
  */
 export function verificarSolucao(A, b, x) {
-  const maior = maiorAbsoluto(A)
-  const tolerancia = maior > 0 ? 1e-9 * maior : 1e-12
   return A.map((row, i) => {
-    const ladoEsquerdo = row.reduce((soma, a, j) => soma + a * x[j], 0)
-    const satisfeita = Math.abs(ladoEsquerdo - b[i]) <= tolerancia
+    const produtos = row.map((a, j) => a * x[j])
+    const ladoEsquerdo = produtos.reduce((soma, p) => soma + p, 0)
+    const escala = Math.max(Math.abs(b[i]), ...produtos.map(Math.abs))
+    const satisfeita = Math.abs(ladoEsquerdo - b[i]) <= 1e-9 * Math.max(escala, 1e-12)
     return { ladoEsquerdo, termo: b[i], satisfeita }
   })
 }

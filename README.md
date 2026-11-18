@@ -152,7 +152,7 @@ Os cálculos estão em [`codigo-fonte/src/lib/cramer.js`](codigo-fonte/src/lib/c
 4. **D = 0** — a regra não se aplica: se algum `Dᵢ ≠ 0`, o sistema é impossível; se todos os `Dᵢ = 0`, os determinantes não bastam para classificar e a classificação vem do escalonamento.
 5. **Sistema não quadrado** — resolvido apenas por escalonamento.
 
-Com coeficientes inteiros os determinantes saem exatos (só somas e produtos); a única divisão é a final, `Dᵢ / D`. Um determinante de ordem `n` é considerado nulo quando `|det| ≤ 1e-9 × (max|mᵢⱼ|)ⁿ`.
+Com coeficientes inteiros os determinantes saem exatos (só somas e produtos); a única divisão é a final, `Dᵢ / D`. Com inteiros, um determinante é nulo só quando vale exatamente `0`; com decimais, quando `|det| ≤ 1e-10 ×` limite de Hadamard (produto das normas das colunas), uma tolerância que acompanha a escala do determinante.
 
 ### Escalonamento (conferência)
 

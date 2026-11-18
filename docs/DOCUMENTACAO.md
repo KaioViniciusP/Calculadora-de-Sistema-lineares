@@ -253,9 +253,9 @@ Funções puras para matrizes quadradas de ordem 1 a 5.
 | `expansaoLaplace(M)` | matriz `n×n` (`n ≥ 2`) | primeiro nível da expansão: `{ termos: [{ linha, elemento, submatriz, menor, cofator, parcela }], total }` (só para exibição) |
 | `detSarrus(M)` | matriz 3×3 | determinante pela Regra de Sarrus (`null` se não for 3×3) |
 | `trocarColuna(A, k, b)` | matriz, índice, vetor | cópia de `A` com a coluna `k` substituída por `b` (`A` não é alterada) |
-| `ehZero(valor, M)` | determinante e sua matriz | `true` se `|valor| ≤ 1e-9 × (max|mᵢⱼ|)ⁿ` (`1e-12` se `M` for nula) |
+| `ehZero(valor, M)` | determinante e sua matriz | matriz inteira (com limite de Hadamard abaixo de `Number.MAX_SAFE_INTEGER`): `valor === 0`; caso contrário, `\|valor\| ≤ 1e-10 × limite de Hadamard` |
 | `resolverCramer(A, b)` | sistema quadrado | `{ aplicavel, D, Di, expansao, solucao, algumDiNaoNulo }` |
-| `verificarSolucao(A, b, x)` | sistema e solução | por equação: `{ ladoEsquerdo, termo, satisfeita }` (tolerância `1e-9 × max|A|`) |
+| `verificarSolucao(A, b, x)` | sistema e solução | por equação: `{ ladoEsquerdo, termo, satisfeita }` (tolerância `1e-9 ×` escala da equação: maior entre `\|bᵢ\|` e os `\|aᵢⱼ·xⱼ\|`) |
 | `coincidem(a, b)` | dois números | `true` se a diferença relativa for até `1e-9` (usada na conferência e na comparação Laplace × Sarrus) |
 
 ### 7.2 `lib/solver.js` — escalonamento
@@ -370,7 +370,7 @@ Nomes seguem as incógnitas: `Dx, Dy, Dz, Dw, Dv`. Quando a regra não se aplica
 
 O caso “todos os `Dᵢ = 0`” é inconclusivo de fato: o exemplo `3x3-spi` é SPI e o exemplo `3x3-d0-si` (todos os coeficientes iguais a 1, `b = (1, 2, 3)`) é SI, ambos com `D = Dx = Dy = Dz = 0`.
 
-Quando `D ≠ 0`, a solução é **verificada por substituição**: para cada equação, calcula-se `Σ aᵢⱼ·xⱼ` e compara-se com `bᵢ` (tolerância `1e-9 × max|A|`, a mesma do escalonamento).
+Quando `D ≠ 0`, a solução é **verificada por substituição**: para cada equação, calcula-se `Σ aᵢⱼ·xⱼ` e compara-se com `bᵢ`. A tolerância é relativa à escala da própria equação: `|Σ aᵢⱼ·xⱼ − bᵢ| ≤ 1e-9 × max(|bᵢ|, |aᵢ₁·x₁|, …, |aᵢₙ·xₙ|)`. Assim, termos independentes ou soluções grandes (por exemplo, `b = (110000, 190000, 200000)`, com solução `(20000, 30000, 40000)`) não reprovam uma solução correta por erro de arredondamento.
 
 ### 8.3 Teorema de Laplace e Regra de Sarrus
 
@@ -405,11 +405,25 @@ A interface indica “Laplace e Sarrus: mesmo resultado” ou “resultados dife
 
 ### 8.4 Determinante nulo: tolerância de `ehZero`
 
-Entradas decimais (`0,1`, `1/3`…) não são exatas em ponto flutuante: um determinante que deveria ser `0` pode sair como `1e-17`. Como um determinante de ordem `n` é soma de produtos de `n` elementos, a tolerância acompanha essa escala:
+`ehZero(valor, M)` decide se um determinante é zero em dois casos:
+
+- **Matriz de inteiros:** o Teorema de Laplace usa só somas e produtos, então o determinante é **exato** enquanto couber em `Number.MAX_SAFE_INTEGER` (2⁵³ − 1). A comparação é direta: `valor === 0`.
+- **Matriz com decimais** (`0,1`, `1/3`…), ou inteiros grandes demais: o ponto flutuante gera resíduos como `1e-17` onde o determinante deveria ser `0`. Usa-se uma tolerância proporcional ao **limite de Hadamard**:
 
 ```text
-tolerância = 1e-9 × (max|mᵢⱼ|)ⁿ          (1e-12 se a matriz for toda nula)
+|det(M)| ≤ ‖coluna 1‖ · ‖coluna 2‖ · … · ‖coluna n‖          (limite de Hadamard)
+
+det considerado nulo  ⇔  |det(M)| ≤ 1e-10 × ‖coluna 1‖ · … · ‖coluna n‖
 ```
+
+O limite de Hadamard cresce na mesma proporção que o determinante: multiplicar uma coluna por `k` multiplica os dois por `k`. Uma regra baseada em `(max|mᵢⱼ|)ⁿ` não tem essa propriedade e falha em dois casos:
+
+| Caso | Com `1e-9 × (max\|mᵢⱼ\|)ⁿ` | Com a regra atual |
+|---|---|---|
+| `A = [[2,1,1],[1,3,2],[3,2,2]]`, `b = (110000, 190000, 200000)` | os `Dᵢ` (até `40000`) ficam abaixo de `1e-9 × 200000³ = 8·10⁶` e viram `0`; solução `(0, 0, 0)` | `Dx = 20000`, `Dy = 30000`, `Dz = 40000`; solução `(20000, 30000, 40000)` |
+| 5×5 de inteiros até `1000` com `D = 1` (ex.: `[[1000,999,0,0,0],[1,1,0,0,0],…]`) | `D = 1` fica abaixo de `1e-9 × 1000⁵ = 10⁶` e vira `0` | `D = 1`; solução `(−998, 999, 1, 1, 1)` |
+
+Com decimais, a regra continua reconhecendo determinantes nulos: em `[[0,1; 0,2], [0,3; 0,6]]`, `D` é tratado como `0`.
 
 `D` e cada `Dᵢ` são testados com a própria matriz (`A` ou `Aᵢ`); valores considerados nulos são devolvidos como `0`.
 
@@ -693,7 +707,7 @@ O projeto não possui suíte automatizada; a validação é feita por roteiro ma
 
 - A constante `EPS = 1e-9` está em `lib/solver.js`.
 - A tolerância efetiva é `EPS × max|A|`. Documente qualquer mudança na seção 8.6.
-- A tolerância dos determinantes está em `ehZero` (`lib/cramer.js`): `1e-9 × (max|mᵢⱼ|)ⁿ`. Documente mudanças na seção 8.4.
+- A decisão de determinante nulo está em `ehZero` (`lib/cramer.js`): comparação exata para matrizes de inteiros e `1e-10 ×` limite de Hadamard nos demais casos. Documente mudanças na seção 8.4.
 
 ### 14.4 Publicar uma atualização
 
