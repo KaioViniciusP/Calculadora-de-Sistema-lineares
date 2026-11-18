@@ -2,16 +2,25 @@ import Tex from "./Tex"
 import MatrixInput from "./MatrixInput"
 import {
   augmentedTex,
+  cofactorTex,
+  cramerQuotientTex,
   criterionTex,
+  detTex,
+  laplaceSumTex,
   matrixTex,
+  minorTex,
+  sarrusTex,
   solutionTex,
   stepTex,
+  substitutionTex,
   systemTex,
+  termTex,
   variableVectorTex,
   vectorTex,
   paramExprTex,
 } from "../lib/latex"
-import { fmt, texNum, VARS } from "../lib/solver"
+import { fmt, texNum, VARS } from "../lib/formatacao"
+import { coincidem, trocarColuna } from "../lib/cramer"
 
 const CLASS_TITLES = {
   SPD: "Sistema Possível e Determinado",
@@ -23,6 +32,27 @@ const CLASS_SUBS = {
   SPD: "Solução única — as equações se encontram em um único ponto.",
   SPI: "Infinitas soluções — há incógnitas livres que se tornam parâmetros.",
   SI: "Nenhuma solução — as equações se contradizem.",
+}
+
+const CRAMER_MSGS = {
+  naoQuadrado:
+    "A Regra de Cramer exige o mesmo número de equações e incógnitas. Este sistema é resolvido apenas por escalonamento.",
+  impossivel: "D = 0 e pelo menos um Dᵢ ≠ 0: o sistema é impossível.",
+  inconclusivo:
+    "D = 0 e todos os Dᵢ = 0: os determinantes não bastam para classificar o sistema (ele pode ser possível e indeterminado ou impossível). A classificação é confirmada pelo escalonamento, na seção Classificação do sistema.",
+}
+
+/** Mensagem da Regra de Cramer quando ela não se aplica (ou null). */
+export function cramerMensagem(cramer) {
+  if (cramer.motivo === "nao-quadrado") return CRAMER_MSGS.naoQuadrado
+  if (cramer.aplicavel) return null
+  return cramer.algumDiNaoNulo ? CRAMER_MSGS.impossivel : CRAMER_MSGS.inconclusivo
+}
+
+/** Tipo visual da mensagem de Cramer: informativa, impossível ou inconclusiva. */
+function cramerMsgKind(cramer) {
+  if (cramer.motivo === "nao-quadrado") return "info"
+  return cramer.algumDiNaoNulo ? "si" : "spi"
 }
 
 /**
@@ -129,7 +159,7 @@ function ConfigSection({ n, m, onUnknowns, onEquations, onGenerate }) {
         </div>
         <div>
           <dt>Método</dt>
-          <dd>Gauss-Jordan</dd>
+          <dd>Cramer + escalonamento</dd>
         </div>
         <div>
           <dt>Tolerância</dt>
@@ -167,7 +197,8 @@ function InputSection({
         <>
           Preencha cada coeficiente e o termo independente. Aceita inteiros,
           decimais com vírgula ou ponto, negativos, zero e frações como{" "}
-          <strong>1/2</strong>. Campos vazios valem <strong>0</strong>.
+          <strong>1/2</strong>. Todos os campos são obrigatórios: use{" "}
+          <strong>0</strong> para coeficientes nulos.
         </>
       }
       noPrint
@@ -315,14 +346,15 @@ function StepsSection({ result }) {
   return (
     <SectionShell
       id="sec-steps"
-      index="05"
+      index="06"
       kicker="MEMÓRIA DE CÁLCULO"
-      title="Passo a passo da resolução"
+      title="Escalonamento · Eliminação de Gauss-Jordan"
       sub={
         <>
-          Eliminação de <strong>Gauss-Jordan</strong> com pivoteamento parcial:
-          cada operação elementar entre linhas é registrada junto com a matriz
-          resultante até a forma escalonada reduzida.
+          Método de <strong>conferência</strong> dos resultados da Regra de
+          Cramer. Eliminação de <strong>Gauss-Jordan</strong> com pivoteamento
+          parcial: cada operação elementar entre linhas é registrada junto com a
+          matriz resultante até a forma escalonada reduzida.
         </>
       }
     >
@@ -427,9 +459,9 @@ function ClassificationSection({ result }) {
   return (
     <SectionShell
       id="sec-classification"
-      index="06"
+      index="07"
       kicker="CLASSIFICAÇÃO"
-      title="Classificação do sistema"
+      title="Classificação do sistema · por escalonamento"
       className={`class-card class-${cls}`}
     >
       <div className="class-top">
@@ -477,9 +509,9 @@ function SolutionSection({ result }) {
   return (
     <SectionShell
       id="sec-solution"
-      index="07"
+      index="08"
       kicker="CONJUNTO SOLUÇÃO"
-      title="Solução do sistema"
+      title="Conjunto solução · por escalonamento"
       className={`solution-card solution-${cls}`}
     >
       <div className={`solution-main ${cls}`}>
@@ -541,11 +573,236 @@ function SolutionSection({ result }) {
   )
 }
 
+/** Mensagem de Cramer (D = 0 ou sistema não quadrado), com cor por tipo. */
+function CramerMessage({ cramer }) {
+  const message = cramerMensagem(cramer)
+  if (!message) return null
+  return (
+    <div className={`cramer-msg cramer-msg-${cramerMsgKind(cramer)}`} role="note">
+      {message}
+    </div>
+  )
+}
+
+/** Passo 1 e 2: D = det(A) pela expansão de Laplace e, em 3×3, por Sarrus. */
+function CramerDeterminant({ A, cramer }) {
+  const { expansao, D, sarrus } = cramer
+  const hasSarrus = sarrus !== undefined && sarrus !== null
+  return (
+    <div className={`cramer-det-grid ${hasSarrus ? "with-sarrus" : ""}`}>
+      <div className="matrix-card">
+        <span className="matrix-label">
+          Determinante principal · Teorema de Laplace (1ª coluna)
+        </span>
+        <Tex tex={`${matrixTex(A, "A")} \\qquad D = \\det(A) = ${detTex(A)}`} display />
+        {expansao ? (
+          <>
+            <div className="cramer-table-wrap">
+              <table className="cramer-table">
+                <thead>
+                  <tr>
+                    <th scope="col">i</th>
+                    <th scope="col">Menor complementar</th>
+                    <th scope="col">Cofator</th>
+                    <th scope="col">Parcela</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expansao.termos.map((term) => (
+                    <tr key={term.linha}>
+                      <th scope="row">{term.linha + 1}</th>
+                      <td><Tex tex={minorTex(term)} /></td>
+                      <td><Tex tex={cofactorTex(term)} /></td>
+                      <td><Tex tex={termTex(term)} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Tex tex={laplaceSumTex(expansao, D)} display />
+          </>
+        ) : (
+          <Tex tex={`D = a_{11} = ${texNum(D)}`} display />
+        )}
+      </div>
+
+      {hasSarrus ? (
+        <div className="matrix-card">
+          <span className="matrix-label">Conferência · Regra de Sarrus</span>
+          <Tex tex={sarrusTex(A, sarrus)} display />
+          <span className={`chip ${coincidem(sarrus, D) ? "chip-spd" : "chip-si"}`}>
+            {coincidem(sarrus, D)
+              ? "Laplace e Sarrus: mesmo resultado"
+              : "Laplace e Sarrus: resultados diferentes"}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** Passo 3: matrizes Dᵢ com a coluna substituída por B destacada em azul. */
+function CramerColumnDets({ A, b, cramer, vars }) {
+  return (
+    <div className="matrices">
+      {vars.map((variable, i) => (
+        <div className="matrix-card" key={variable}>
+          <span className="matrix-label">
+            D{variable} · coluna {variable} substituída por B
+          </span>
+          <Tex
+            tex={`D_{${variable}} = ${detTex(trocarColuna(A, i, b), i)} = ${texNum(cramer.Di[i])}`}
+            display
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Passo 5: verificação por substituição, equação por equação. */
+function CramerVerification({ A, cramer }) {
+  return (
+    <div className="cramer-table-wrap">
+      <table className="cramer-table">
+        <thead>
+          <tr>
+            <th scope="col">Equação</th>
+            <th scope="col">Lado esquerdo com a solução</th>
+            <th scope="col">Termo independente</th>
+            <th scope="col">Confere</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cramer.verificacao.map((check, i) => (
+            <tr key={i}>
+              <th scope="row">L{i + 1}</th>
+              <td><Tex tex={substitutionTex(A[i], cramer.solucao, check.ladoEsquerdo)} /></td>
+              <td><Tex tex={`b_{${i + 1}} = ${texNum(check.termo)}`} /></td>
+              <td>
+                <span className={`check-mark ${check.satisfeita ? "ok" : "fail"}`}>
+                  {check.satisfeita ? "✓" : "✗"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function CramerSection({ result }) {
+  const { A, b, res, cramer } = result
+  const vars = VARS.slice(0, res.n)
+  const square = cramer.motivo !== "nao-quadrado"
+
+  return (
+    <SectionShell
+      id="sec-cramer"
+      index="05"
+      kicker="REGRA DE CRAMER"
+      title="Regra de Cramer · Teorema de Laplace"
+      className="cramer-card"
+      sub={
+        <>
+          Método principal: <strong>D = det(A)</strong> e cada{" "}
+          <strong>Dᵢ</strong> (coluna i trocada por B) calculados pelo Teorema
+          de Laplace, expandindo pela 1ª coluna; se D ≠ 0,{" "}
+          <strong>xᵢ = Dᵢ / D</strong>.
+        </>
+      }
+    >
+      {square ? (
+        <>
+          <h3 className="cramer-step">1 · Determinante principal D</h3>
+          <CramerDeterminant A={A} cramer={cramer} />
+
+          <h3 className="cramer-step">2 · Determinantes Dᵢ</h3>
+          <CramerColumnDets A={A} b={b} cramer={cramer} vars={vars} />
+
+          {cramer.aplicavel ? (
+            <>
+              <h3 className="cramer-step">3 · Solução pela Regra de Cramer</h3>
+              <div className="sol-list">
+                {vars.map((variable, i) => (
+                  <div className="sol-item" key={variable}>
+                    <Tex tex={cramerQuotientTex(variable, cramer.Di[i], cramer.D, cramer.solucao[i])} />
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="cramer-step">4 · Verificação por substituição</h3>
+              <CramerVerification A={A} cramer={cramer} />
+            </>
+          ) : null}
+        </>
+      ) : null}
+
+      <CramerMessage cramer={cramer} />
+    </SectionShell>
+  )
+}
+
+function ConferenceSection({ result }) {
+  const { res, solution, classification, cramer } = result
+  if (!cramer.aplicavel) return null
+  const vars = VARS.slice(0, res.n)
+  const rows = vars.map((variable, i) => {
+    const byElimination = classification === "SPD" ? solution.exprs[i].constant : null
+    const match = byElimination !== null && coincidem(cramer.solucao[i], byElimination)
+    return { variable, byCramer: cramer.solucao[i], byElimination, match }
+  })
+  const allMatch = rows.every((row) => row.match)
+
+  return (
+    <SectionShell
+      id="sec-conferencia"
+      index="09"
+      kicker="CONFERÊNCIA"
+      title="Conferência · Cramer × escalonamento"
+      sub="Cada incógnita calculada pela Regra de Cramer é comparada com o valor obtido por escalonamento (Gauss-Jordan)."
+    >
+      <div className="cramer-table-wrap">
+        <table className="cramer-table">
+          <thead>
+            <tr>
+              <th scope="col">Incógnita</th>
+              <th scope="col">Regra de Cramer</th>
+              <th scope="col">Escalonamento</th>
+              <th scope="col">Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.variable}>
+                <th scope="row" className="var-name">{row.variable}</th>
+                <td className="num">{fmt(row.byCramer)}</td>
+                <td className="num">{row.byElimination === null ? "—" : fmt(row.byElimination)}</td>
+                <td>
+                  <span className={`chip ${row.match ? "chip-spd" : "chip-si"}`}>
+                    {row.match ? "coincide" : "diverge"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="sol-note">
+        {allMatch
+          ? "Os dois métodos chegaram à mesma solução."
+          : "Há divergência entre os métodos: confira os coeficientes digitados."}
+      </p>
+    </SectionShell>
+  )
+}
+
 function ExplainSection() {
   return (
     <SectionShell
       id="teoria"
-      index="09"
+      index="11"
       kicker="REFERÊNCIA TEÓRICA"
       title="Entendendo SPD, SPI e SI"
       sub="A classificação vem da comparação entre os postos da matriz dos coeficientes e da matriz ampliada."
@@ -588,12 +845,31 @@ function ExplainSection() {
         <li>
           <span className="n">1</span>
           <span>
-            <strong>Matriz ampliada:</strong> os coeficientes e os termos
-            independentes são colocados na mesma matriz (A|B).
+            <strong>Regra de Cramer:</strong> em sistemas quadrados, calcula-se
+            D = det(A) e cada Dᵢ, trocando a coluna i de A pelos termos
+            independentes. Se D ≠ 0, o sistema é SPD e xᵢ = Dᵢ / D. Se D = 0, a
+            regra não se aplica.
           </span>
         </li>
         <li>
           <span className="n">2</span>
+          <span>
+            <strong>Teorema de Laplace:</strong> cada determinante é a soma, ao
+            longo da 1ª coluna, de aᵢ₁ · Cᵢ₁, com cofator Cᵢ₁ = (−1)^(i+1) · Mᵢ₁
+            e Mᵢ₁ o menor complementar. Em 3×3, o resultado é comparado com a
+            Regra de Sarrus.
+          </span>
+        </li>
+        <li>
+          <span className="n">3</span>
+          <span>
+            <strong>Conferência por escalonamento — matriz ampliada:</strong> os
+            coeficientes e os termos independentes são colocados na mesma matriz
+            (A|B).
+          </span>
+        </li>
+        <li>
+          <span className="n">4</span>
           <span>
             <strong>Pivôs e operações elementares:</strong> escolhe-se o maior
             elemento em módulo da coluna (pivoteamento parcial) e usam-se troca
@@ -601,7 +877,7 @@ function ExplainSection() {
           </span>
         </li>
         <li>
-          <span className="n">3</span>
+          <span className="n">5</span>
           <span>
             <strong>Postos:</strong> conta-se o número de linhas não nulas com
             pivô em A e em (A|B). Uma linha do tipo <em>0 = k</em> com k ≠ 0
@@ -609,11 +885,12 @@ function ExplainSection() {
           </span>
         </li>
         <li>
-          <span className="n">4</span>
+          <span className="n">6</span>
           <span>
-            <strong>Tolerância numérica:</strong> valores abaixo de 10⁻⁹ × (maior
-            entrada da matriz A) são tratados como zero, evitando erros de
-            arredondamento.
+            <strong>Tolerância numérica:</strong> no escalonamento, valores
+            abaixo de 10⁻⁹ × (maior entrada da matriz A) são tratados como zero;
+            um determinante de ordem n é considerado nulo abaixo de 10⁻⁹ ×
+            (maior entrada)ⁿ, evitando erros de arredondamento.
           </span>
         </li>
       </ol>
@@ -631,8 +908,10 @@ export {
   InputSection,
   SystemSection,
   MatricesSection,
+  CramerSection,
   StepsSection,
   ClassificationSection,
   SolutionSection,
+  ConferenceSection,
   ExplainSection,
 }

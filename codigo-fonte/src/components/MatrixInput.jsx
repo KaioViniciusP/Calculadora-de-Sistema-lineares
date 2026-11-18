@@ -1,4 +1,4 @@
-import { VARS } from "../lib/solver"
+import { VARS } from "../lib/formatacao"
 
 /**
  * Grade editável de coeficientes.
@@ -44,7 +44,6 @@ export default function MatrixInput({ n, m, values, errors, onChange, onKeyDown,
                       inputMode="decimal"
                       autoComplete="off"
                       spellCheck="false"
-                      placeholder="0"
                       aria-label={`Coeficiente de ${vars[col]} na equação ${row + 1}`}
                       data-row={row}
                       data-col={col}
@@ -65,7 +64,6 @@ export default function MatrixInput({ n, m, values, errors, onChange, onKeyDown,
                   inputMode="decimal"
                   autoComplete="off"
                   spellCheck="false"
-                  placeholder="0"
                   aria-label={`Termo independente da equação ${row + 1}`}
                   data-row={row}
                   data-col={n}

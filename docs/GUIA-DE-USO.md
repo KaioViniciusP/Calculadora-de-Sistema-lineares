@@ -33,7 +33,7 @@ A tela é organizada como uma **prancha técnica**, com seções numeradas:
 
 - **SEC 01** — configuração;
 - **SEC 02** — entrada de dados;
-- **SEC 03 a 09** — resultados, gráfico e teoria (aparecem após resolver).
+- **SEC 03 a 11** — resultados (Regra de Cramer, escalonamento e conferência), gráfico e teoria (aparecem após resolver).
 
 ---
 
@@ -73,11 +73,11 @@ Preencha:
 Atalhos úteis:
 
 - **Exemplo preenchido** — aplica um exemplo compatível com a dimensão atual;
-- **Ou escolha um exemplo pronto** — lista com 12 sistemas SPD, SPI e SI;
+- **Ou escolha um exemplo pronto** — lista com 15 sistemas SPD, SPI e SI (a situação-problema do relatório está no topo);
 - **Limpar campos** — zera a grade;
 - **Gerar matriz** — redesenha a grade e posiciona o cursor no primeiro campo.
 
-Campos vazios valem `0`. Se algum valor for inválido, ele fica destacado e a resolução não é executada.
+Todos os campos são obrigatórios: digite `0` para coeficientes nulos. Campos vazios ou inválidos ficam destacados e a resolução não é executada.
 
 ---
 
@@ -85,7 +85,7 @@ Campos vazios valem `0`. Se algum valor for inválido, ele fica destacado e a re
 
 Clique em **Resolver sistema** ou pressione `Enter` em qualquer campo.
 
-A calculadora valida os dados, monta as matrizes e executa a eliminação de Gauss-Jordan. Em seguida, a página rola até a seção de resultados.
+A calculadora valida os dados, monta as matrizes, aplica a Regra de Cramer (determinantes pelo Teorema de Laplace) e confere o resultado pela eliminação de Gauss-Jordan. Em seguida, a página rola até a seção de resultados.
 
 Se você alterar um coeficiente depois de resolver, aparece o aviso **“Coeficientes alterados — resultados da última resolução”**. Clique em **Resolver novamente** para atualizar.
 
@@ -97,11 +97,13 @@ Se você alterar um coeficiente depois de resolver, aparece o aviso **“Coefici
 |---|---|
 | **SEC 03 · Sistema** | O sistema montado a partir da matriz, com a classificação. |
 | **SEC 04 · Representação matricial** | `A`, `X`, `B` e a matriz ampliada `(A\|B)`. |
-| **SEC 05 · Memória de cálculo** | Cada operação elementar (troca, normalização e eliminação) com a matriz resultante. Os pivôs finais ficam em azul. |
-| **SEC 06 · Classificação** | SPD, SPI ou SI, o critério por postos e, em SI, a linha impossível `0 = k`. |
-| **SEC 07 · Conjunto solução** | Valores únicos, forma paramétrica ou `S = ∅`. |
-| **SEC 08 · Gráfico** | Retas e interseção (2 incógnitas) ou leitura geométrica (3+). |
-| **SEC 09 · Teoria** | Referência sobre as classificações e o método. |
+| **SEC 05 · Regra de Cramer · Teorema de Laplace** | `D` pela expansão de Laplace na 1ª coluna (menores, cofatores e parcelas), `D` por Sarrus em 3×3, cada `Dᵢ` com a coluna trocada em azul, `xᵢ = Dᵢ / D` e a verificação por substituição. Se `D = 0` ou o sistema não for quadrado, aparece uma mensagem explicando o caso. |
+| **SEC 06 · Escalonamento · Eliminação de Gauss-Jordan** | Cada operação elementar (troca, normalização e eliminação) com a matriz resultante. Os pivôs finais ficam em azul. |
+| **SEC 07 · Classificação do sistema · por escalonamento** | SPD, SPI ou SI, o critério por postos e, em SI, a linha impossível `0 = k`. |
+| **SEC 08 · Conjunto solução · por escalonamento** | Valores únicos, forma paramétrica ou `S = ∅`. |
+| **SEC 09 · Conferência · Cramer × escalonamento** | Cada incógnita pelos dois métodos, com “coincide” ou “diverge” (só quando `D ≠ 0`). |
+| **SEC 10 · Gráfico** | Retas e interseção (2 incógnitas) ou leitura geométrica (3+). |
+| **SEC 11 · Teoria** | Referência sobre as classificações e os métodos. |
 
 ### Como interpretar os postos
 
@@ -173,7 +175,7 @@ Na barra de ações acima dos resultados:
 | `2e3` | 2000 |
 | `2E-3` | 0,002 |
 | `1 000` | 1000 |
-| *(vazio)* | 0 |
+| *(vazio)* | inválido — digite `0` para coeficientes nulos |
 | `abc` | inválido — campo destacado |
 | `1/0` | inválido — divisão por zero |
 
@@ -254,7 +256,7 @@ Não pela interface. O limite é 1–5 equações e 2–5 incógnitas, por decis
 Você alterou algum coeficiente depois da última resolução. Clique em **Resolver novamente**.
 
 **A calculadora mostra todos os passos?**
-Sim. A SEC 05 registra trocas de linha, normalização de pivô e eliminação, com a matriz resultante de cada operação.
+Sim. A SEC 05 mostra a Regra de Cramer com a expansão de Laplace de `D`, e a SEC 06 registra trocas de linha, normalização de pivô e eliminação, com a matriz resultante de cada operação.
 
 ---
 

@@ -7,7 +7,7 @@ export default function SheetHeader() {
         <span>CALC · SISTEMAS LINEARES</span>
       </div>
       <div className="sheet-meta" aria-label="Metadados da prancha">
-        <span>SHEET 01 / 09</span>
+        <span>SHEET 01 / 11</span>
         <span className="sheet-sep" aria-hidden="true" />
         <span>REV 2.0</span>
         <span className="sheet-sep" aria-hidden="true" />
