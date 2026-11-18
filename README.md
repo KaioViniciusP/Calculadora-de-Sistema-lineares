@@ -1,6 +1,6 @@
 # Calculadora de Sistemas Lineares
 
-**Resolva, classifique e entenda sistemas lineares — de 1 a 5 equações e de 2 a 5 incógnitas — com passo a passo de Gauss-Jordan, solução paramétrica e gráfico interativo.**
+**Resolva, classifique e entenda sistemas lineares — de 1 a 5 equações e de 2 a 5 incógnitas — pela Regra de Cramer com determinantes pelo Teorema de Laplace, conferida pelo escalonamento de Gauss-Jordan, com solução paramétrica e gráfico interativo.**
 
 Uma aplicação web em português (pt-BR), feita para estudantes e professores verem não só o resultado, mas *como* ele foi obtido. Roda 100% no navegador, sem servidor, sem cadastro e sem internet.
 
@@ -33,12 +33,18 @@ Uma aplicação web em português (pt-BR), feita para estudantes e professores v
 - **1 a 5 equações** e **2 a 5 incógnitas** (x, y, z, w, v).
 - Grade editável de coeficientes + termos independentes.
 - Aceita inteiros, decimais com vírgula ou ponto, negativos, zero e frações como `1/2`.
-- Campos vazios são tratados como `0`; entradas inválidas são destacadas com mensagem.
-- **12 exemplos prontos**: SPD, SPI e SI de 2×2 a 5×5, incluindo o sistema do Projeto Integrador.
+- Todos os campos são obrigatórios: campo vazio é inválido e fica destacado, como qualquer entrada inválida (use `0` para coeficientes nulos).
+- **15 exemplos prontos**: SPD, SPI e SI de 2×2 a 5×5, com a situação-problema do relatório no topo da lista.
 
 ### Resolução matemática
 
-- **Eliminação de Gauss-Jordan** com pivoteamento parcial.
+- **Regra de Cramer** em sistemas quadrados: determinante principal `D`, determinantes `Dx, Dy, Dz, Dw, Dv` (coluna da incógnita trocada pelos termos independentes, destacada em azul) e `xᵢ = Dᵢ / D`.
+- **Teorema de Laplace**: todo determinante é calculado pela expansão na 1ª coluna, exibindo menores complementares, cofatores, parcelas e soma.
+- **Comparação com a Regra de Sarrus** em sistemas 3×3: `D` é calculado pelos dois métodos, com a indicação “mesmo resultado” ou “resultados diferentes”.
+- **Verificação por substituição** da solução de Cramer, equação por equação (✓/✗).
+- Mensagens claras quando a regra não se aplica: `D = 0` (com ou sem algum `Dᵢ ≠ 0`) ou sistema não quadrado.
+- **Conferência por escalonamento**: tabela que compara cada incógnita obtida por Cramer com a do escalonamento (“coincide” / “diverge”).
+- **Eliminação de Gauss-Jordan** com pivoteamento parcial (método de conferência e único método para sistemas não quadrados).
 - Passo a passo completo: troca de linhas, normalização do pivô e eliminação, com a matriz ampliada em cada operação.
 - **Classificação por postos** de A e (A|B): SPD, SPI ou SI.
 - Conjunto solução único, **paramétrico** (com variáveis livres) ou vazio (`S = ∅`).
@@ -48,7 +54,7 @@ Uma aplicação web em português (pt-BR), feita para estudantes e professores v
 
 - Gráfico 2D interativo com **Mafs**: retas, ponto de interseção, zoom, pan e reenquadramento.
 - Para 3+ incógnitas, explicação geométrica com planos em vez de um gráfico enganoso.
-- Seção teórica sobre SPD, SPI e SI e sobre o método usado.
+- Seção teórica sobre SPD, SPI e SI e sobre os métodos usados.
 - Botões de **copiar resultado** e **imprimir / gerar PDF** com layout próprio.
 - Interface responsiva, acessível por teclado e com atalho `Enter` para resolver.
 
@@ -73,21 +79,23 @@ Em **SEC 01 · Configuração**, selecione a quantidade de incógnitas e de equa
 
 Em **SEC 02 · Entrada de dados**, digite os coeficientes e o termo independente de cada equação.
 
-Exemplo:
+Exemplo (situação-problema do relatório):
 
 ```
-2x + y + 3z = 190
- x + 3y + 2z = 190
- x + 2y + 2z = 160
+2x + y + z = 100
+ x + 3y + 2z = 180
+3x + 2y + 2z = 200
 ```
 
 Na grade, a última coluna é o termo independente:
 
 | x | y | z | = |
 |---|---|---|---|
-| 2 | 1 | 3 | 190 |
-| 1 | 3 | 2 | 190 |
-| 1 | 2 | 2 | 160 |
+| 2 | 1 | 1 | 100 |
+| 1 | 3 | 2 | 180 |
+| 3 | 2 | 2 | 200 |
+
+Todos os campos precisam ser preenchidos; digite `0` para coeficientes nulos.
 
 > Dica: use **Exemplo preenchido** ou escolha um exemplo pronto no seletor. Pressione `Enter` em qualquer campo para resolver.
 
@@ -99,11 +107,13 @@ Clique em **Resolver sistema**. A “prancha” de resultados é gerada com:
 |---|---|
 | **SEC 03 · Sistema** | O sistema montado a partir da matriz, em notação matemática |
 | **SEC 04 · Representação matricial** | A, X, B e a matriz ampliada (A\|B) |
-| **SEC 05 · Passo a passo** | Todas as operações de Gauss-Jordan, pivô por pivô |
-| **SEC 06 · Classificação** | Postos, número de soluções e o critério aplicado |
-| **SEC 07 · Conjunto solução** | Valores únicos, forma paramétrica ou conjunto vazio |
-| **SEC 08 · Gráfico** | Retas, interseção e zoom (2 incógnitas) ou leitura geométrica (3+) |
-| **SEC 09 · Teoria** | Referência sobre SPD, SPI, SI e o método |
+| **SEC 05 · Regra de Cramer · Teorema de Laplace** | `D` pela expansão de Laplace (e por Sarrus em 3×3), cada `Dᵢ`, `xᵢ = Dᵢ / D`, verificação por substituição ou a mensagem de `D = 0` / sistema não quadrado |
+| **SEC 06 · Escalonamento · Eliminação de Gauss-Jordan** | Todas as operações de Gauss-Jordan, pivô por pivô (conferência) |
+| **SEC 07 · Classificação do sistema · por escalonamento** | Postos, número de soluções e o critério aplicado |
+| **SEC 08 · Conjunto solução · por escalonamento** | Valores únicos, forma paramétrica ou conjunto vazio |
+| **SEC 09 · Conferência · Cramer × escalonamento** | Cada incógnita pelos dois métodos, com “coincide” ou “diverge” (sistema quadrado com `D ≠ 0`) |
+| **SEC 10 · Gráfico** | Retas, interseção e zoom (2 incógnitas) ou leitura geométrica (3+) |
+| **SEC 11 · Teoria** | Referência sobre SPD, SPI, SI e os métodos |
 
 ![Sistema e matrizes resolvidos](docs/solucao.png)
 
@@ -117,7 +127,7 @@ Com **3 ou mais incógnitas**, a aplicação explica por que o desenho 2D não r
 
 ### 5. Copie ou imprima
 
-- **Copiar resultado** gera um resumo em texto para colar no relatório.
+- **Copiar resultado** gera um resumo em texto para colar no relatório, com `D`, os `Dᵢ`, a solução por Cramer (ou a mensagem de `D = 0` / não quadrado), a verificação e o resultado do escalonamento.
 - **Imprimir / PDF** abre a impressão do navegador já sem os controles, preservando resultados e gráfico.
 
 ### Classificações
@@ -132,7 +142,19 @@ Com **3 ou mais incógnitas**, a aplicação explica por que o desenho 2D não r
 
 ## Como o sistema é resolvido
 
-O núcleo está em [`codigo-fonte/src/lib/solver.js`](codigo-fonte/src/lib/solver.js) e não usa bibliotecas de álgebra linear.
+Os cálculos estão em [`codigo-fonte/src/lib/cramer.js`](codigo-fonte/src/lib/cramer.js) (Regra de Cramer, Laplace e Sarrus) e [`codigo-fonte/src/lib/solver.js`](codigo-fonte/src/lib/solver.js) (escalonamento), sem bibliotecas de álgebra linear.
+
+### Regra de Cramer com o Teorema de Laplace
+
+1. **Determinante principal** — `D = det(A)`, pelo Teorema de Laplace na 1ª coluna: `D = Σ aᵢ₁·Cᵢ₁`, com cofator `Cᵢ₁ = (−1)^(i+1)·Mᵢ₁` e `Mᵢ₁` o menor complementar. Em 3×3, `D` também é calculado por Sarrus.
+2. **Determinantes Dᵢ** — `Dᵢ = det(Aᵢ)`, em que `Aᵢ` é `A` com a coluna `i` trocada pelos termos independentes.
+3. **Solução** — se `D ≠ 0`, o sistema é SPD e `xᵢ = Dᵢ / D`, verificado por substituição em cada equação.
+4. **D = 0** — a regra não se aplica: se algum `Dᵢ ≠ 0`, o sistema é impossível; se todos os `Dᵢ = 0`, os determinantes não bastam para classificar e a classificação vem do escalonamento.
+5. **Sistema não quadrado** — resolvido apenas por escalonamento.
+
+Com coeficientes inteiros os determinantes saem exatos (só somas e produtos); a única divisão é a final, `Dᵢ / D`. Com inteiros, um determinante é nulo só quando vale exatamente `0`; com decimais, quando `|det| ≤ 1e-10 ×` limite de Hadamard (produto das normas das colunas), uma tolerância que acompanha a escala do determinante.
+
+### Escalonamento (conferência)
 
 1. **Matriz ampliada** — os coeficientes e os termos independentes são reunidos em `(A|B)`.
 2. **Pivoteamento parcial** — em cada coluna, escolhe-se o maior elemento em módulo para reduzir erro numérico.
@@ -169,6 +191,8 @@ A tolerância é relativa à maior entrada de A (`1e-9 × max|A|`), porque a esc
 - **Fontes locais** (`@fontsource-variable`) para o app funcionar offline.
 - **Build em arquivo único** (`vite-plugin-singlefile`): JS, CSS e fontes são embutidos em um só `index.html`, que abre com duplo clique.
 - **Tolerância relativa** em vez de comparação absoluta com zero, mais adequada a coeficientes de escalas diferentes.
+- **Laplace sempre pela 1ª coluna**, para que menores e cofatores exibidos possam ser comparados com o cálculo manual do relatório; o custo na ordem de `n!` é aceitável no limite de 5×5.
+- **Módulos de cálculo autocontidos**: `cramer.js` e `solver.js` não importam React, formatação, LaTeX nem o gráfico.
 - **Sem gráfico falso para 3+ incógnitas**: a aplicação declara a limitação e apresenta a leitura geométrica correta.
 
 ### Design
@@ -176,8 +200,8 @@ A tolerância é relativa à maior entrada de A (`1e-9 × max|A|`), porque a esc
 A interface segue uma mistura de **Geist** (Vercel) com **Meridian Blueprint** (Kombai):
 
 - fundo claro com grid técnico, azul de planta e detalhes em verde;
-- barra de carimbo `SHEET 01 / 09 · REV 2.0 · SCALE 1:1`;
-- seções numeradas `SEC 01` a `SEC 09`, cantos técnicos e cartões de 1 px;
+- barra de carimbo `SHEET 01 / 11 · REV 2.0 · SCALE 1:1`;
+- seções numeradas `SEC 01` a `SEC 11`, cantos técnicos e cartões de 1 px;
 - tipografia mono para metadados e números tabulares;
 - layout responsivo, com tabela que cabe até 5 incógnitas no celular.
 
@@ -204,12 +228,15 @@ A interface segue uma mistura de **Geist** (Vercel) com **Meridian Blueprint** (
 │       ├── styles.css          # tela e impressão
 │       ├── components/
 │       │   ├── SheetHeader.jsx # barra de carimbo
-│       │   ├── Sections.jsx    # seções SEC 01 a 09
+│       │   ├── Sections.jsx    # seções SEC 01 a 11
 │       │   ├── MatrixInput.jsx # grade editável
 │       │   ├── GraphView.jsx   # gráfico Mafs e leitura 3D
 │       │   └── Tex.jsx         # renderizador KaTeX
 │       └── lib/
+│           ├── cramer.js       # Regra de Cramer, Laplace, Sarrus, verificação
 │           ├── solver.js       # Gauss-Jordan, postos, classificação
+│           ├── formatacao.js   # leitura e formatação de números
+│           ├── grafico.js      # geometria do gráfico 2D
 │           ├── latex.js        # construtores de LaTeX
 │           └── examples.js     # exemplos e redimensionamento
 └── README.md
@@ -277,7 +304,8 @@ https://kaioViniciusP.github.io/Calculadora-de-Sistema-lineares/
 
 - Os cálculos usam ponto flutuante de precisão dupla. A tolerância reduz, mas não elimina, os efeitos de arredondamento em sistemas muito mal condicionados.
 - O gráfico cartesiano só representa corretamente sistemas com **2 incógnitas**. Para 3+, a aplicação apresenta a leitura geométrica em vez de um desenho incorreto.
-- Dimensões limitadas a **1–5 equações** e **2–5 incógnitas** por decisão de interface.
+- Dimensões limitadas a **1–5 equações** e **2–5 incógnitas** por decisão de interface (o Teorema de Laplace cresce na ordem de `n!`).
+- A Regra de Cramer só se aplica a sistemas quadrados com `D ≠ 0`; com `D = 0` e todos os `Dᵢ = 0`, a classificação depende do escalonamento.
 - O foco é didático: mostrar o método e o significado do resultado, não substituir software de álgebra linear de alta performance.
 
 ---

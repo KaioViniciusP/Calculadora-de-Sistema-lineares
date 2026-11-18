@@ -6,13 +6,17 @@ import {
   InputSection,
   SystemSection,
   MatricesSection,
+  CramerSection,
   StepsSection,
   ClassificationSection,
   SolutionSection,
+  ConferenceSection,
   ExplainSection,
+  cramerMensagem,
 } from "./components/Sections"
 import { EXAMPLES, emptyValues, exampleForSize, resizeValues, valuesFromSystem } from "./lib/examples"
-import { fmt, parseNumber, solveSystem, VARS } from "./lib/solver"
+import { solveSystem } from "./lib/solver"
+import { fmt, parseNumber, VARS } from "./lib/formatacao"
 
 const CLASS_TITLES = {
   SPD: "Sistema Possível e Determinado",
@@ -59,6 +63,43 @@ function plainParamExpr(expr) {
   return hasTerm ? out : "0"
 }
 
+/** Bloco da Regra de Cramer · Teorema de Laplace no relatório textual. */
+function cramerToText(result, vars) {
+  const { A, cramer } = result
+  const lines = ["REGRA DE CRAMER · TEOREMA DE LAPLACE"]
+  if (cramer.motivo === "nao-quadrado") {
+    lines.push(`  ${cramerMensagem(cramer)}`)
+    return lines
+  }
+  lines.push(`  D = det(A) = ${fmt(cramer.D)} (Laplace pela 1ª coluna)`)
+  if (cramer.expansao) {
+    cramer.expansao.termos.forEach((t) => {
+      const i = t.linha + 1
+      lines.push(
+        `    a${i}1 = ${fmt(t.elemento)} · M${i}1 = ${fmt(t.menor)} · C${i}1 = ${fmt(t.cofator)} · parcela = ${fmt(t.parcela)}`,
+      )
+    })
+  }
+  if (cramer.sarrus !== undefined && cramer.sarrus !== null) {
+    lines.push(`  D por Sarrus = ${fmt(cramer.sarrus)}`)
+  }
+  vars.forEach((v, i) => lines.push(`  D${v} = ${fmt(cramer.Di[i])}`))
+  if (!cramer.aplicavel) {
+    lines.push(`  ${cramerMensagem(cramer)}`)
+    return lines
+  }
+  lines.push(
+    `  ${vars.map((v, i) => `${v} = D${v}/D = ${fmt(cramer.solucao[i])}`).join("; ")}`,
+  )
+  lines.push("  Verificação por substituição:")
+  cramer.verificacao.forEach((check, i) => {
+    lines.push(
+      `    ${plainExpr(A[i], vars)} = ${fmt(check.ladoEsquerdo)} (esperado ${fmt(check.termo)}) ${check.satisfeita ? "✓" : "✗"}`,
+    )
+  })
+  return lines
+}
+
 /** Relatório textual completo do resultado. */
 function resultToText(result) {
   if (!result) return ""
@@ -79,11 +120,13 @@ function resultToText(result) {
   lines.push("")
   lines.push(`Vetor B: [ ${b.map((v) => fmt(v)).join("  ")} ]`)
   lines.push("")
-  lines.push("CLASSIFICAÇÃO")
+  lines.push(...cramerToText(result, vars))
+  lines.push("")
+  lines.push("CLASSIFICAÇÃO (por escalonamento)")
   lines.push(`  ${classification} — ${CLASS_TITLES[classification]}`)
   lines.push(`  posto(A) = ${res.rankA} · posto(A|B) = ${res.rankAug} · incógnitas = ${res.n}`)
   lines.push("")
-  lines.push("SOLUÇÃO")
+  lines.push("SOLUÇÃO (por escalonamento)")
   if (classification === "SI") {
     lines.push("  S = ∅ (conjunto vazio)")
   } else if (classification === "SPD") {
@@ -94,7 +137,9 @@ function resultToText(result) {
     lines.push(`  ${solution.params.join(", ")} ∈ ℝ`)
   }
   lines.push("")
-  lines.push("Resolvido por eliminação de Gauss-Jordan com pivoteamento parcial.")
+  lines.push(
+    "Resolvido pela Regra de Cramer (determinantes pelo Teorema de Laplace) e conferido por eliminação de Gauss-Jordan com pivoteamento parcial.",
+  )
   return lines.join("\r\n")
 }
 
@@ -230,7 +275,7 @@ export default function App() {
       setFormError(
         `Verifique ${invalid.size} ${
           invalid.size === 1 ? "campo destacado" : "campos destacados"
-        }: use números inteiros, decimais (vírgula ou ponto) ou frações como 1/2.`,
+        }: preencha todos os campos com números inteiros, decimais (vírgula ou ponto) ou frações como 1/2. Use 0 para coeficientes nulos.`,
       )
       const firstKey = [...invalid][0]
       inputRefs.current[firstKey]?.focus()
@@ -344,9 +389,10 @@ export default function App() {
               resolvidos em prancha.
             </h1>
             <p className="hero-sub">
-              Resolva sistemas de 1 a 5 equações, classifique por postos e
-              acompanhe cada operação de Gauss-Jordan — com a leitura gráfica
-              das retas no plano.
+              Resolva sistemas de 1 a 5 equações pela Regra de Cramer, com
+              determinantes pelo Teorema de Laplace, e confira cada resultado
+              pelo escalonamento de Gauss-Jordan — com a leitura gráfica das
+              retas no plano.
             </p>
             <div className="hero-actions">
               <a className="btn btn-primary" href="#resolver">
@@ -367,7 +413,7 @@ export default function App() {
               </div>
               <div>
                 <dt>Método</dt>
-                <dd>Gauss-Jordan</dd>
+                <dd>Cramer · Laplace</dd>
               </div>
               <div>
                 <dt>Classificações</dt>
@@ -463,9 +509,11 @@ export default function App() {
 
             <SystemSection result={result} />
             <MatricesSection result={result} />
+            <CramerSection result={result} />
             <StepsSection result={result} />
             <ClassificationSection result={result} />
             <SolutionSection result={result} />
+            <ConferenceSection result={result} />
 
             <section id="sec-graph" className="card graph-card">
               <span className="card-tick card-tick-tl" aria-hidden="true" />
@@ -474,7 +522,7 @@ export default function App() {
               <span className="card-tick card-tick-br" aria-hidden="true" />
               <header className="card-head">
                 <div className="card-head-main">
-                  <span className="sec-kicker">SEC 08 · GRÁFICO</span>
+                  <span className="sec-kicker">SEC 10 · GRÁFICO</span>
                   <h2 className="card-title">Representação gráfica</h2>
                   <p className="card-sub">
                     {result.res.n === 2
@@ -498,7 +546,8 @@ export default function App() {
             <p>
               Preencha os coeficientes acima e clique em{" "}
               <strong>Resolver sistema</strong> para gerar a prancha completa:
-              matrizes, passo a passo, classificação, conjunto solução e gráfico.
+              matrizes, Regra de Cramer, escalonamento, classificação, conjunto
+              solução, conferência e gráfico.
             </p>
           </div>
         )}

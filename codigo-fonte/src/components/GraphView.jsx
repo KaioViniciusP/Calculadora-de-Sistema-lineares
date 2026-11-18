@@ -2,13 +2,8 @@ import { useEffect, useMemo, useState } from "react"
 import { Mafs, Coordinates, Line, Point, Text } from "mafs"
 import Tex from "./Tex"
 import { linearExprTex } from "../lib/latex"
-import {
-  computeView,
-  fmt,
-  linesCoincident,
-  lineEndpoints,
-  VARS,
-} from "../lib/solver"
+import { computeView, linesCoincident, lineEndpoints } from "../lib/grafico"
+import { fmt, VARS } from "../lib/formatacao"
 
 const COLORS = ["#0060df", "#0d9f6e", "#7c3aed", "#dc2f2f", "#b45309"]
 const STYLES = ["solid", "dashed", "solid", "dashed", "solid"]
